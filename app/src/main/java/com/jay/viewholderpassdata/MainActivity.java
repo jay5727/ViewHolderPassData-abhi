@@ -1,14 +1,13 @@
 package com.jay.viewholderpassdata;
 
-import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.Toast;
@@ -16,13 +15,8 @@ import android.widget.Toast;
 import com.google.gson.Gson;
 import com.jay.viewholderpassdata.adapter.ChildAdapter;
 import com.jay.viewholderpassdata.adapter.MyCustomParentAdapter;
-import com.jay.viewholderpassdata.model.CustomLinkedHashMap;
 import com.jay.viewholderpassdata.model.CustomModel;
-import com.jay.viewholderpassdata.model.ResponseModel;
 
-import junit.framework.Assert;
-
-import org.codehaus.jackson.map.ObjectMapper;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -67,15 +61,18 @@ public class MainActivity extends AppCompatActivity implements MyCustomParentAda
         setContentView(R.layout.activity_main);
         ctx = this;
         ButterKnife.bind(this);
-        filtermethod();
         boolean checkservice = getSharedPreferencesBoolean(ctx, "servicecheck");
         if (checkservice == false) {
             filtermethod();
         } else {
             hashstorage = InnovUtils.getSharedPreferences(ctx, InnovConstant.hashmap);
-            linkedhashstorage = InnovUtils.getSharedPreferences(ctx, InnovConstant.linkedhashmap);
+            String missingDataJsonObject = "{\"data\":";
+            String endingDataJsonObject = "}";
+
+            linkedhashstorage = missingDataJsonObject + InnovUtils.getSharedPreferences(ctx, InnovConstant.linkedhashmap) + endingDataJsonObject;
+
             HashMap<String, String> parsedMap = (HashMap<String, String>) MapUtil.stringToMap(hashstorage);
-            for (String key : hMapHeaderAndCount.keySet()) {
+   /*         for (String key : hMapHeaderAndCount.keySet()) {
                 Assert.assertEquals(parsedMap.get(key), hMapHeaderAndCount.get(key));
             }
 
@@ -86,14 +83,11 @@ public class MainActivity extends AppCompatActivity implements MyCustomParentAda
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            Log.e("Linkedmapconvert", map + "");
-            RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(this);
-            recycl1.setLayoutManager(mLayoutManager);
-            recycl1.addItemDecoration(new DividerItemDecoration(this, LinearLayoutManager.VERTICAL));
-            recycl1.setItemAnimator(new DefaultItemAnimator());
-            recycl1.setNestedScrollingEnabled(false);
-            parentAdapter = new MyCustomParentAdapter(ctx, parsedMap, map, this);
-            recycl1.setAdapter(parentAdapter);
+            Log.e("Linkedmapconvert", map + "");*/
+
+            if (!TextUtils.isEmpty(linkedhashstorage)) {
+                bindUserFilledData(parsedMap, linkedhashstorage );
+            }
         }
 
 
@@ -144,6 +138,51 @@ public class MainActivity extends AppCompatActivity implements MyCustomParentAda
         recycl1.setItemAnimator(new DefaultItemAnimator());
         recycl1.setNestedScrollingEnabled(false);
         parentAdapter = new MyCustomParentAdapter(ctx, hMapHeaderAndCount, objHashmap, this);
+        recycl1.setAdapter(parentAdapter);
+    }
+
+
+    public void bindUserFilledData(HashMap<String, String> parsedMap,String jsonString) {
+        LinkedHashMap<String, List<CustomModel>> objHashmap = new LinkedHashMap<>();
+        JSONObject objRoot = null;
+        try {
+            objRoot = new JSONObject(jsonString);
+            List<CustomModel> lstCustomModel = null;
+            String key = null;
+            JSONObject jsonObjHeader = objRoot.getJSONObject("data");
+//            for (int i = 0; i < jsonArrayHeader.length(); i++)
+//            {
+            Iterator<String> iter = jsonObjHeader.keys();
+            while (iter.hasNext()) {
+                key = iter.next();
+                try {
+                    JSONArray jsonArray = jsonObjHeader.getJSONArray(key);
+                    lstCustomModel = new ArrayList<>();
+                    //loop through every JSONArray
+                    for (int j = 0; j < jsonArray.length(); j++) {
+                        //loop through every JSONObject
+                        JSONObject jsonObject = (JSONObject) jsonArray.get(j);
+                        String name = (String) jsonObject.get("Name");
+                        boolean flag = (boolean) jsonObject.get("isSelected");
+                        lstCustomModel.add(new CustomModel(name, flag));
+                    }
+                    objHashmap.put(key, lstCustomModel);
+                } catch (JSONException e) {
+                    // Something went wrong!
+                }
+            }
+//            }
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(this);
+        recycl1.setLayoutManager(mLayoutManager);
+        recycl1.addItemDecoration(new DividerItemDecoration(this, LinearLayoutManager.VERTICAL));
+        recycl1.setItemAnimator(new DefaultItemAnimator());
+        recycl1.setNestedScrollingEnabled(false);
+        parentAdapter = new MyCustomParentAdapter(ctx, parsedMap, objHashmap, this);
         recycl1.setAdapter(parentAdapter);
     }
 

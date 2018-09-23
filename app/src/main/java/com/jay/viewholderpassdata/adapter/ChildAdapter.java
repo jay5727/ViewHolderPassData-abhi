@@ -90,7 +90,7 @@ public class ChildAdapter extends RecyclerView.Adapter<ChildAdapter.ViewHolder> 
     public class ViewHolder extends RecyclerView.ViewHolder {
         TextView childheader_name;
         ImageView tickmark;
-        LinearLayout linLayParent, radiogrouplist,llParentLayoutFilter;
+        LinearLayout linLayParent, radiogrouplist, llParentLayoutFilter;
         RadioGroup radioGroup;
 
         public ViewHolder(View itemView) {
